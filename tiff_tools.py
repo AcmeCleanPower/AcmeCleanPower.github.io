@@ -35,7 +35,6 @@ def get_output_cmap(data, cmap, mincolor=None, maxcolor=None, logcolor=False):
         if maxcolor and (i > maxcolor or (mincolor and i + mincolor > maxcolor)):
             color = int(maxcolor)
         alpha = 1.0 * i / ncolors
-        print alpha
         if alpha > 1:
             alpha = 1
         color = tuple(map(lambda x: int(x * 255),
@@ -75,9 +74,13 @@ def write_array_to_tiff(data, fout, params, dtype=np.uint16, cmap=plt.cm.jet, no
     if dtype in (np.uint8, np.uint16):
         color_table = get_output_cmap(data, cmap, mincolor, maxcolor, logcolor=logcolor)
     minx, maxy, maxx, miny = params
+
     rows, cols = np.shape(data)
+
     xres = (maxx - minx) / float(cols)
+
     yres = (maxy - miny) / float(rows)
+
     geo_transform = (minx, xres, 0, maxy, 0, -yres)
     options = ['COMPRESS=DEFLATE', 'TILED=YES']
     out = gdal.GetDriverByName('GTiff').Create(

@@ -13,7 +13,7 @@ def get_heatmap(data, kernel_area=1000000, resolution=30):
         kernel_radius = int(kernel_radius)
     kernel = morphology.disk(kernel_radius)
     adjust = np.sqrt(kernel_area) / np.pi / kernel_radius
-    return signal.convolve2d(data, kernel) * adjust
+    return signal.convolve2d(data, kernel, mode='same') * adjust
 
 
 def generate_heatmaps_from_population(data, kernel_area=1000000, resolution=30):
