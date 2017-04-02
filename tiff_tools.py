@@ -9,7 +9,7 @@ def read_array_from_tiff(fin, band=1):
     return np.array(tiff.GetRasterBand(band).ReadAsArray())
 
 
-def get_output_cmap(data, cmap, mincolor=None, maxcolor=None, logcolor=False):
+def get_output_cmap(data, cmap, mincolor=None, maxcolor=None, use_alpha=True):
     maxval = data.max()
     if not maxcolor:
         maxcolor = maxval
@@ -20,25 +20,21 @@ def get_output_cmap(data, cmap, mincolor=None, maxcolor=None, logcolor=False):
     if mincolor:
         colordiff -= mincolor
         ncolors -= mincolor
-    if logcolor:
-        ncolors = np.log2(ncolors)
-        if maxcolor:
-            maxcolor = np.log2(maxcolor)
-        if mincolor:
-            mincolor = np.log2(mincolor)
     dcolor = 255.0 / (ncolors)
     color_table = gdal.ColorTable()
     for i in xrange(int(maxval) + 1):
-        if logcolor:
-            i = np.log2(logcolor)
         color = int(i * dcolor)
         if maxcolor and (i > maxcolor or (mincolor and i + mincolor > maxcolor)):
             color = int(maxcolor)
         alpha = 1.0 * i / ncolors
         if alpha > 1:
             alpha = 1
-        color = tuple(map(lambda x: int(x * 255),
-                          cmap(color)[:-1] + (alpha,)))
+        if use_alpha:
+            color = tuple(map(lambda x: int(x * 255),
+                              cmap(color)[:-1] + (alpha,)))
+        else:
+            color = tuple(map(lambda x: int(x * 255),
+                              cmap(color)[:-1]))
         if mincolor:
             color_table.SetColorEntry(int(i + mincolor), color)
         else:
@@ -50,7 +46,7 @@ def normalize_array_for_uint8(data):
     return data / data.max() * 255.0
 
 
-def write_array_to_tiff(data, fout, params, dtype=np.uint16, cmap=plt.cm.jet, nodata=-1 * 2**8 + 1, maxcolor=None, mincolor=None, logcolor=False):
+def write_array_to_tiff(data, fout, params, dtype=np.uint16, cmap=plt.cm.jet, nodata=-1 * 2**8 + 1, maxcolor=None, mincolor=None, alpha=True):
     normalize = False
     if dtype == np.uint16:
         outtype = gdal.GDT_UInt16
@@ -72,7 +68,7 @@ def write_array_to_tiff(data, fout, params, dtype=np.uint16, cmap=plt.cm.jet, no
     data = data.astype(dtype)
     color_table = None
     if dtype in (np.uint8, np.uint16):
-        color_table = get_output_cmap(data, cmap, mincolor, maxcolor, logcolor=logcolor)
+        color_table = get_output_cmap(data, cmap, mincolor, maxcolor, use_alpha=alpha)
     minx, maxy, maxx, miny = params
 
     rows, cols = np.shape(data)
@@ -192,9 +188,9 @@ def get_all_coords_from_folder(folder):
     return pixels
 
 
-def save_data_derived_from_tiff(tiff_address, data, fout, dtype=np.uint16, cmap=plt.cm.jet, nodata=-1 * 2**8 + 1, maxcolor=None, mincolor=None, logcolor=False):
+def save_data_derived_from_tiff(tiff_address, data, fout, dtype=np.uint16, cmap=plt.cm.jet, nodata=-1 * 2**8 + 1, maxcolor=None, mincolor=None, alpha=True):
     params = get_params_for_tiff(tiff_address, data)
     print params
     data = np.choose(data > 0, (0, data))
     write_array_to_tiff(data, fout, params, dtype, cmap,
-                        nodata, maxcolor, mincolor, logcolor=logcolor)
+                        nodata, maxcolor, mincolor, alpha=alpha)
