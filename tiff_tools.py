@@ -9,25 +9,37 @@ def read_array_from_tiff(fin, band=1):
     return np.array(tiff.GetRasterBand(band).ReadAsArray())
 
 
-def get_output_cmap(data, cmap, mincolor=None, maxcolor=None):
+def get_output_cmap(data, cmap, mincolor=None, maxcolor=None, logcolor=False):
     maxval = data.max()
     if not maxcolor:
         maxcolor = maxval
     if maxval <= 1:
         return None
     ncolors = maxcolor + 1
-    colordiff = maxcolor + 1
+    colordiff = maxcolor
     if mincolor:
         colordiff -= mincolor
         ncolors -= mincolor
+    if logcolor:
+        ncolors = np.log2(ncolors)
+        if maxcolor:
+            maxcolor = np.log2(maxcolor)
+        if mincolor:
+            mincolor = np.log2(mincolor)
     dcolor = 255.0 / (ncolors)
     color_table = gdal.ColorTable()
-    for i in xrange(colordiff):
+    for i in xrange(int(maxval) + 1):
+        if logcolor:
+            i = np.log2(logcolor)
         color = int(i * dcolor)
         if maxcolor and (i > maxcolor or (mincolor and i + mincolor > maxcolor)):
             color = int(maxcolor)
+        alpha = 1.0 * i / ncolors
+        print alpha
+        if alpha > 1:
+            alpha = 1
         color = tuple(map(lambda x: int(x * 255),
-                          cmap(color)[1:] + ((1.0 * i) / ncolors,)))
+                          cmap(color)[:-1] + (alpha,)))
         if mincolor:
             color_table.SetColorEntry(int(i + mincolor), color)
         else:
@@ -39,7 +51,7 @@ def normalize_array_for_uint8(data):
     return data / data.max() * 255.0
 
 
-def write_array_to_tiff(data, fout, params, dtype=np.uint16, cmap=plt.cm.jet, nodata=-1 * 2**8 + 1, maxcolor=None, mincolor=None):
+def write_array_to_tiff(data, fout, params, dtype=np.uint16, cmap=plt.cm.jet, nodata=-1 * 2**8 + 1, maxcolor=None, mincolor=None, logcolor=False):
     normalize = False
     if dtype == np.uint16:
         outtype = gdal.GDT_UInt16
@@ -61,7 +73,7 @@ def write_array_to_tiff(data, fout, params, dtype=np.uint16, cmap=plt.cm.jet, no
     data = data.astype(dtype)
     color_table = None
     if dtype in (np.uint8, np.uint16):
-        color_table = get_output_cmap(data, cmap, mincolor, maxcolor)
+        color_table = get_output_cmap(data, cmap, mincolor, maxcolor, logcolor=logcolor)
     minx, maxy, maxx, miny = params
     rows, cols = np.shape(data)
     xres = (maxx - minx) / float(cols)
@@ -71,10 +83,14 @@ def write_array_to_tiff(data, fout, params, dtype=np.uint16, cmap=plt.cm.jet, no
     out = gdal.GetDriverByName('GTiff').Create(
         fout, cols, rows, 1, outtype, options=options)
     out.SetGeoTransform(geo_transform)
+    srs = osr.SpatialReference()
+    srs.ImportFromEPSG(4326)
+    out.SetProjection(srs.ExportToWkt())
     band = out.GetRasterBand(1)
     band.SetNoDataValue(nodata)
     if color_table:
         band.SetRasterColorTable(color_table)
+        band.SetRasterColorInterpretation(gdal.GPI_RGB)
     band.WriteArray(data)
     out.FlushCache()
 
@@ -173,8 +189,9 @@ def get_all_coords_from_folder(folder):
     return pixels
 
 
-def save_data_derived_from_tiff(tiff_address, data, fout, dtype=np.uint16, cmap=plt.cm.jet, nodata=-1 * 2**8 + 1, maxcolor=None, mincolor=None):
+def save_data_derived_from_tiff(tiff_address, data, fout, dtype=np.uint16, cmap=plt.cm.jet, nodata=-1 * 2**8 + 1, maxcolor=None, mincolor=None, logcolor=False):
     params = get_params_for_tiff(tiff_address, data)
     print params
+    data = np.choose(data > 0, (0, data))
     write_array_to_tiff(data, fout, params, dtype, cmap,
-                        nodata, maxcolor, mincolor)
+                        nodata, maxcolor, mincolor, logcolor=logcolor)
