@@ -32,6 +32,7 @@ map.on('style.load', function() {
 var visibility = {
    "radiance-layer": false,
    "population-layer": false,
+   "population-layer-lowres": false,   
    "viableElectrification-layer": false,
    "transmission-layer": false,
    "road-layer": false,
@@ -82,9 +83,25 @@ function addPopulationHeatmapLayer() {
             "id": "population-layer",
             "type": "raster",
             "source": "population-heatmap",
-            "minzoom": 0,
+            "minzoom": 7,
             "maxzoom": 22
     });
+
+    map.addSource('population-heatmap-lowres', {
+        type: 'raster',
+        url: 'mapbox://sscchan.86f0cbuv'
+    });
+  
+    map.addLayer({
+            "id": "population-layer-lowres",
+            "type": "raster",
+            "source": "population-heatmap-lowres",
+            "minzoom": 0,
+            "maxzoom": 7
+    });
+
+    map.setPaintProperty('population-layer-lowres', 'raster-opacity', 0.5);
+    map.setLayoutProperty('population-layer-lowres', 'visibility', 'none');  
 
     map.setPaintProperty('population-layer', 'raster-opacity', 0.5);
     map.setLayoutProperty('population-layer', 'visibility', 'none');  
@@ -165,6 +182,7 @@ $(document).ready(function() {
   });
   $("#populationButton").on("click", function(){
     visibility["population-layer"] = !visibility["population-layer"];
+    visibility["population-layer-lowres"] = !visibility["population-layer-lowres"];        
     renderLayers();
   });
   $("#transmissionButton").on("click", function(){
