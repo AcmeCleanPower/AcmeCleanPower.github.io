@@ -165,8 +165,8 @@ function addRoadLayer() {
             "line-cap": "round"
         },
         "paint": {
-            "line-color": "#000000",
-            "line-width": 2
+            "line-color": "#CCCCCC",
+            "line-width": 1
         },
     });
   
@@ -178,24 +178,29 @@ function addRoadLayer() {
 $(document).ready(function() {
   $("#radianceButton").on("click", function(){
     visibility["radiance-layer"] = !visibility["radiance-layer"];
+    $("#radianceButton").toggleClass("btn-success");      
     renderLayers();
   });
   $("#populationButton").on("click", function(){
     visibility["population-layer"] = !visibility["population-layer"];
-    visibility["population-layer-lowres"] = !visibility["population-layer-lowres"];        
+    visibility["population-layer-lowres"] = !visibility["population-layer-lowres"];      
+    $("#populationButton").toggleClass("btn-success");  
     renderLayers();
   });
   $("#transmissionButton").on("click", function(){
     visibility["transmission-layer"] = !visibility["transmission-layer"];
+    $("#transmissionButton").toggleClass("btn-success");
     renderLayers();
   });  
   $("#roadsButton").on("click", function(){
     visibility["road-layer"] = !visibility["road-layer"];
+    $("#roadsButton").toggleClass("btn-success");
     renderLayers();
   });    
 
   $("#viableElectrificationButton").on("click", function(){
     visibility["viableElectrification-layer"] = !visibility["viableElectrification-layer"];
+    $("#viableElectrificationButton").toggleClass("btn-success");
     renderLayers();
   });    
   
