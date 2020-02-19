@@ -46,7 +46,7 @@ def normalize_array_for_uint8(data):
     return data / data.max() * 255.0
 
 
-def write_array_to_tiff(data, fout, params, dtype=np.uint16, cmap=plt.cm.jet, nodata=-1 * 2**8 + 1, maxcolor=None, mincolor=None, alpha=True):
+def write_array_to_tiff(data, fout, params, dtype=np.uint16, cmap=plt.cm.jet, nodata=-1, maxcolor=None, mincolor=None, alpha=True):
     normalize = False
     if dtype == np.uint16:
         outtype = gdal.GDT_UInt16
@@ -164,9 +164,8 @@ def pixelToLatLon(geotifAddr, pixelPairs):
 def get_params_for_tiff(tiff_address, data):
     params = pixelToLatLon(
         tiff_address, [[0, 0], [i - 1 for i in data.shape[::-1]]])
-    print params
     params = [i[::-1] for i in params]
-    print params
+    print(params)
     return params[0] + params[1]
 
 
@@ -190,7 +189,7 @@ def get_all_coords_from_folder(folder):
 
 def save_data_derived_from_tiff(tiff_address, data, fout, dtype=np.uint16, cmap=plt.cm.jet, nodata=-1 * 2**8 + 1, maxcolor=None, mincolor=None, alpha=True):
     params = get_params_for_tiff(tiff_address, data)
-    print params
+    print(params)
     data = np.choose(data > 0, (0, data))
     write_array_to_tiff(data, fout, params, dtype, cmap,
                         nodata, maxcolor, mincolor, alpha=alpha)
